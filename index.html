@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prithwish Ghosh | AI-Powered Portfolio</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Custom styles */
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background-color: #000000;
+            color: #e0e0e0;
+            overflow-x: hidden;
+            cursor: none;
+            scroll-behavior: smooth;
+        }
+
+        #matrix-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            opacity: 0.2;
+        }
+        
+        #stars-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.5;
+        }
+
+        .glass-container {
+            background: rgba(10, 10, 10, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* New Spotlight Effect */
+        .glass-container::before {
+            content: '';
+            position: absolute;
+            top: var(--mouse-y, -100px);
+            left: var(--mouse-x, -100px);
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(0, 255, 255, 0.15) 0%, rgba(0, 255, 255, 0) 70%);
+            transform: translate(-50%, -50%);
+            transition: top 0.2s ease, left 0.2s ease;
+            pointer-events: none;
+            opacity: 0;
+        }
+        .glass-container:hover::before {
+            opacity: 1;
+        }
+
+        /* Navigation */
+        .nav-container {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            z-index: 1000;
+            background: rgba(10, 10, 10, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 2rem;
+            padding: 0.5rem;
+        }
+
+        .nav-link {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            margin: 0 0.25rem;
+            border-radius: 1.5rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: #e0e0e0;
+            font-size: 0.875rem;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background: rgba(0, 255, 255, 0.2);
+            color: #00ffff;
+        }
+
+        /* Scroll-based fade-in animations */
+        .scroll-animate {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+        }
+        .scroll-animate.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .scroll-animate-left {
+            opacity: 0;
+            transform: translateX(-50px);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+        }
+        .scroll-animate-left.is-visible {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        .scroll-animate-right {
+            opacity: 0;
+            transform: translateX(50px);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+        }
+        .scroll-animate-right.is-visible {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0a0a0a; }
+        ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+
+        /* Custom Aurora Cursor */
+        #aurora-cursor {
+            position: fixed;
+            width: 30px;
+            height: 30px;
+            background: radial-gradient(circle, rgba(0, 255, 255, 0.3) 0%, rgba(0, 255, 255, 0) 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+            transition: width 0.3s, height 0.3s, background-color 0.3s;
+        }
+        #aurora-cursor.hover {
+            width: 50px;
+            height: 50px;
+            background: radial-gradient(circle, rgba(255, 0, 255, 0.4) 0%, rgba(255, 0, 255, 0) 70%);
+        }
+
+        /* Pulsing button animation */
+        .pulse-btn {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(0, 255, 255, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 255, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 255, 255, 0); }
+        }
+
+        /* Typing animation */
+        .typing-animation::after {
+            content: '|';
+            animation: blink 1s infinite;
+        }
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        /* Progress bars */
+        .progress-bar { width: 100%; height: 8px; background: rgba(255, 255, 255, 0.1); border-radius: 4px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #00ffff, #ff00ff); border-radius: 4px; transition: width 2s ease-out; }
+
+        /* AI Chat Modal & FAB */
+        #ai-chat-fab {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(45deg, #00ffff, #ff00ff);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: black;
+            cursor: pointer;
+            z-index: 1001;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+            transition: transform 0.3s;
+        }
+        #ai-chat-fab:hover {
+            transform: scale(1.1);
+        }
+        #ai-chat-modal {
+            position: fixed;
+            bottom: 7rem;
+            right: 2rem;
+            width: 90%;
+            max-width: 400px;
+            height: 500px;
+            z-index: 1000;
+            opacity: 0;
+            transform: translateY(20px);
+            pointer-events: none;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        #ai-chat-modal.visible {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: all;
+        }
+        #chat-window {
+            height: calc(100% - 60px);
+            overflow-y: auto;
+            padding: 1rem;
+        }
+        .chat-message {
+            margin-bottom: 1rem;
+            max-width: 85%;
+            padding: 0.5rem 1rem;
+            border-radius: 1rem;
+        }
+        .user-message {
+            background-color: #00ffff;
+            color: black;
+            border-bottom-right-radius: 0;
+            align-self: flex-end;
+            margin-left: auto;
+        }
+        .ai-message {
+            background-color: #333;
+            border-bottom-left-radius: 0;
+            align-self: flex-start;
+        }
+        .loading-dots span {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #888;
+            animation: blink 1.4s infinite both;
+        }
+        .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+            .nav-container { bottom: 6rem; /* Make space for chat FAB */ left: 1rem; right: 1rem; top: auto; display: flex; justify-content: center; padding: 0.75rem; }
+            .nav-link { padding: 0.5rem; font-size: 0.75rem; }
+            #matrix-canvas { opacity: 0.2; }
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <div id="aurora-cursor"></div>
+    <canvas id="matrix-canvas"></canvas>
+    <canvas id="stars-canvas"></canvas>
+    
+    <!-- Navigation -->
+    <nav class="nav-container"></nav>
+
+    <!-- AI Chat FAB -->
+    <div id="ai-chat-fab" title="Chat with my AI Assistant">✨</div>
+
+    <!-- AI Chat Modal -->
+    <div id="ai-chat-modal" class="glass-container flex flex-col">
+        <div class="p-4 border-b border-gray-700 text-center font-bold text-cyan-400">AI Assistant</div>
+        <div id="chat-window" class="flex-grow flex flex-col space-y-4"></div>
+        <div class="p-2 border-t border-gray-700">
+            <input id="chat-input" type="text" placeholder="Ask about my skills..." class="w-full bg-transparent text-white focus:outline-none p-2">
+        </div>
+    </div>
+
+    <div class="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Hero Section -->
+        <header id="home" class="min-h-screen flex flex-col justify-center items-center text-center py-20">
+            <div class="glass-container p-8 md:p-12 scroll-animate">
+                <h1 id="glitch-text" class="text-5xl md:text-7xl font-bold text-white tracking-tighter leading-tight">
+                    PRITHWISH GHOSH
+                </h1>
+                <p class="mt-4 text-xl md:text-2xl text-cyan-400 font-light typing-animation" id="typing-text"></p>
+                <p id="hero-summary" class="mt-6 max-w-2xl mx-auto text-gray-300 text-lg"></p>
+                <div class="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+                    <a href="#projects" class="sheen-effect pulse-btn px-8 py-3 bg-cyan-500 text-black font-semibold rounded-full hover:bg-cyan-400 transition-colors duration-300">
+                        View My Work
+                    </a>
+                    <a href="#contact" class="sheen-effect px-8 py-3 border border-cyan-500 text-cyan-500 font-semibold rounded-full hover:bg-cyan-500 hover:text-black transition-all duration-300">
+                        Get In Touch
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <main class="space-y-24 md:space-y-32 pb-20">
+            <!-- About Section -->
+            <section id="about" class="glass-container p-8 md:p-12 scroll-animate">
+                <h2 class="text-4xl font-bold text-white mb-8 text-center">About Me</h2>
+                <div class="grid md:grid-cols-1 gap-12 items-center">
+                    <div class="scroll-animate-left">
+                        <div id="about-text" class="text-lg text-gray-300 space-y-4">
+                            <!-- About text will be dynamically inserted here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Areas of Interest Section -->
+            <section id="interests" class="glass-container p-8 md:p-12 scroll-animate">
+                <h2 class="text-4xl font-bold text-white mb-8 text-center">Areas of Interest</h2>
+                <div id="interests-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <!-- Interests will be dynamically inserted here -->
+                </div>
+            </section>
+
+            <!-- Experience Section -->
+            <section id="experience" class="glass-container p-8 md:p-12 scroll-animate">
+                <h2 class="text-4xl font-bold text-white mb-8 text-center">Project Experience</h2>
+                <div id="experience-timeline" class="max-w-4xl mx-auto">
+                    <!-- Experience items will be dynamically inserted here -->
+                </div>
+            </section>
+
+            <!-- Projects Section -->
+            <section id="projects" class="glass-container p-8 md:p-12 scroll-animate">
+                <h2 class="text-4xl font-bold text-white mb-8 text-center">Featured Projects</h2>
+                <div id="projects-grid" class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Project cards will be dynamically inserted here -->
+                </div>
+            </section>
+            
+            <!-- Open Problems Section -->
+            <section id="open-problems" class="glass-container p-8 md:p-12 scroll-animate">
+                <h2 class="text-4xl font-bold text-white mb-8 text-center">Open Problems I'm Thinking About</h2>
+                <div id="open-problems-list" class="max-w-3xl mx-auto space-y-4 text-center text-lg text-gray-300">
+                    <!-- Open problems will be dynamically inserted here -->
+                </div>
+            </section>
+
+            <!-- Skills Section -->
+            <section id="skills" class="glass-container p-8 md:p-12 scroll-animate">
+                <h2 class="text-4xl font-bold text-white mb-8 text-center">Technical Skills</h2>
+                <div id="skills-container" class="grid md:grid-cols-2 gap-8">
+                    <!-- Skills will be dynamically inserted here -->
+                </div>
+                <div class="mt-12 text-center scroll-animate">
+                    <h3 class="text-2xl font-bold text-cyan-400 mb-6">Full Tech Stack</h3>
+                    <div class="flex flex-wrap justify-center items-center gap-4">
+                        <img src="https://skillicons.dev/icons?i=python,tensorflow,scikitlearn,firebase,html,css,js,gcp,opencv,pandas,numpy,c&perline=6&theme=dark" alt="My Tech Stack">
+                    </div>
+                </div>
+            </section>
+
+            <!-- Contact Section -->
+            <section id="contact" class="glass-container p-8 md:p-12 scroll-animate">
+                <h2 class="text-4xl font-bold text-white mb-8 text-center">Let's Work Together</h2>
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div class="scroll-animate-left">
+                        <h3 class="text-2xl font-bold text-cyan-400 mb-4">Get In Touch</h3>
+                        <p class="text-gray-300 mb-6">I'm always interested in new opportunities and exciting projects. Whether you have a question or just want to say hi, I'll try my best to get back to you!</p>
+                        <div id="contact-details" class="space-y-4">
+                            <!-- Contact details will be dynamically inserted here -->
+                        </div>
+                        <div class="mt-8">
+                            <h4 class="text-lg font-semibold text-white mb-4">Follow Me</h4>
+                            <div id="social-links" class="flex space-x-4">
+                                <!-- Social links will be dynamically inserted here -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="scroll-animate-right">
+                        <form id="contact-form" action="https://formspree.io/f/YOUR_FORM_ID" method="POST" class="space-y-4">
+                            <div>
+                                <label for="name" class="block text-sm font-medium text-gray-300 mb-2">Name</label>
+                                <input type="text" id="name" name="name" required class="form-input" placeholder="Your Name">
+                            </div>
+                            <div>
+                                <label for="email" class="block text-sm font-medium text-gray-300 mb-2">Email</label>
+                                <input type="email" id="email" name="email" required class="form-input" placeholder="your.email@example.com">
+                            </div>
+                            <div>
+                                <label for="subject" class="block text-sm font-medium text-gray-300 mb-2">Subject</label>
+                                <input type="text" id="subject" name="subject" required class="form-input" placeholder="Project Inquiry">
+                            </div>
+                            <div>
+                                <label for="message" class="block text-sm font-medium text-gray-300 mb-2">Message</label>
+                                <textarea id="message" name="message" rows="5" required class="form-input" placeholder="Tell me about your project..."></textarea>
+                            </div>
+                            <button type="submit" class="w-full px-6 py-3 bg-cyan-500 text-black font-semibold rounded-lg hover:bg-cyan-400 transition-colors duration-300">
+                                Send Message
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="text-center py-12 scroll-animate">
+            <p class="text-gray-400 mb-4">Thanks for visiting! Let's create something amazing together.</p>
+            <p id="footer-text" class="text-sm text-gray-600"></p>
+        </footer>
+    </div>
+    
+    <script>
+        // --- DATA ---
+        const portfolioData = {
+            name: "PRITHWISH GHOSH",
+            contact: {
+                email: "prithwish260805@rediffmail.com",
+                phone: "+919875373292",
+                location: "Kolkata, India",
+                linkedin: "https://www.linkedin.com/in/prithwish-ghosh-ml",
+                github: "https://github.com/your-username" // PLEASE UPDATE THIS
+            },
+            navLinks: ["Home", "About", "Interests", "Experience", "Projects", "Skills", "Contact"],
+            heroSummary: "A passionate B.Tech Computer Science student on a mission to blend deep technical knowledge with meaningful real-world impact, driven by first-principle thinking and a curiosity that spans technology, philosophy, and biology.",
+            typingPhrases: [
+                'Computer Science Student',
+                'Systems & AI Researcher',
+                'First-Principles Thinker',
+                'Future Innovator'
+            ],
+            about: {
+                text: [
+                    "I'm Prithwish Ghosh, a passionate and curious B.Tech Computer Science student (graduating 2028) on a mission to blend deep technical knowledge with meaningful real-world impact. My interests span across Operating Systems, Compilers, Programming Language Design, and Machine Learning, and I’m currently building a solid foundation in both systems-level development and AI research.",
+                    "I believe in first-principle thinking, and my work often intersects with philosophy, neuroscience, and computational biology, where I enjoy exploring how fundamental principles can be applied to solve complex problems."
+                ]
+            },
+            interests: [
+                { title: "Philosophical Side", description: "Heavily inspired by Advaita Vedanta, I often bring a philosophical lens to technology and research—exploring questions of consciousness, intelligence, and the self.", icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Z"/><path d="M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12Z"/><path d="M12 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/></svg>` },
+                { title: "Computational Biology", description: "Exploring how algorithms and modeling can help us understand gene expression, disease pathways, and personalized medicine.", icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="M8 8v1"/><path d="M8 12v1"/><path d="M12 8v1"/><path d="M16 8v1"/><path d="M16 12v1"/></svg>` },
+                { title: "Information Theory", description: "Fascinated by how sparsity, entropy, and structure can be leveraged to make inference and learning efficient.", icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="16" x="4" y="4" rx="2"/><path d="M9 4v16"/><path d="M15 4v16"/><path d="M4 9h16"/><path d="M4 15h16"/></svg>` },
+                { title: "Theoretical Computer Science", description: "Working with the mathematics of computation, including automata theory, algorithmic complexity, and formal languages.", icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 14 4-4"/><path d="m12 14-4-4"/><path d="M12 14v4"/><path d="M12 4v2"/><path d="M12 20v2"/><path d="m4.9 4.9 1.4 1.4"/><path d="m17.7 17.7 1.4 1.4"/><path d="m2 12h2"/><path d="m20 12h2"/><path d="m4.9 19.1 1.4-1.4"/><path d="m17.7 6.3 1.4-1.4"/></svg>` },
+                { title: "Machine Learning & AI", description: "My focus is on interpretable models, unsupervised learning, and biologically inspired learning systems.", icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>` }
+            ],
+            openProblems: [
+                "Can machine learning models be made transparent and truly explainable in high-stakes fields like healthcare?",
+                "Is it possible to design computational models of consciousness using tools from TCS and neuroscience?",
+                "How can ancient frameworks like Ayurveda’s Tridosha inspire novel approaches to phenotype classification or disease prediction?"
+            ],
+            experience: [
+                {
+                    title: "ML Engineer (Project Role)",
+                    company: "EduSpark - Smart Agri & Edu Platform",
+                    period: "March 2025 - May 2025",
+                    description: "Built a full-stack AI-integrated platform for rural development. Developed features like Al-Powered Plant Disease Detection (CNNs), Crop Yield Prediction, and Market Trends Forecasting (LSTMs). Deployed on Google Cloud VM with Firebase integration."
+                },
+                {
+                    title: "Research Lead (Project Role)",
+                    company: "Mental Health Monitoring via Keystroke Dynamics",
+                    period: "Ongoing",
+                    description: "Leading the development of a custom large-scale dataset and ML pipeline to detect early signs of mental health issues (e.g., stress, anxiety) based on passive typing behavior using Python and various ML libraries."
+                }
+            ],
+            projects: [
+                {
+                    title: "EduSpark Platform",
+                    description: "A full-stack AI-integrated platform for rural development, offering intelligent support for agriculture, education, and vocational training.",
+                    tags: ["Python", "TensorFlow", "GCP", "IoT", "Firebase"],
+                    icon: "�",
+                    gradient: "from-cyan-500 to-blue-600",
+                    repoLink: "#",
+                    liveLink: "#"
+                },
+                {
+                    title: "Mental Health Analytics",
+                    description: "An in-progress research project to detect mental health issues from passive keystroke dynamics, involving custom dataset creation and ML pipeline development.",
+                    tags: ["Python", "Scikit-learn", "XGBoost", "Research"],
+                    icon: "🧠",
+                    gradient: "from-purple-500 to-pink-600",
+                    repoLink: "#",
+                    liveLink: null
+                },
+                {
+                    title: "HackFest Project",
+                    description: "Qualified for and participated in a prestigious state-level hackathon organized by SAP, collaborating in a team to build a socially impactful tech solution.",
+                    tags: ["Hackathon", "SAP", "Teamwork"],
+                    icon: "🏆",
+                    gradient: "from-green-500 to-teal-600",
+                    repoLink: "#",
+                    liveLink: null
+                }
+            ],
+            skills: [
+                {
+                    area: "Machine Learning & Data Science",
+                    list: [
+                        { name: "Python", level: 95 },
+                        { name: "TensorFlow", level: 90 },
+                        { name: "Scikit-learn", level: 92 },
+                        { name: "Pandas & NumPy", level: 88 }
+                    ]
+                },
+                {
+                    area: "Development & Tools",
+                    list: [
+                        { name: "Firebase", level: 85 },
+                        { name: "Google Cloud Platform (GCP)", level: 80 },
+                        { name: "HTML/CSS/JavaScript", level: 75 },
+                        { name: "C Programming", level: 70 }
+                    ]
+                }
+            ]
+        };
+
+        // --- DYNAMIC CONTENT RENDERING ---
+        function renderContent() {
+            document.getElementById('glitch-text').textContent = portfolioData.name;
+            document.getElementById('hero-summary').textContent = portfolioData.heroSummary;
+            document.getElementById('footer-text').textContent = `© 2025 ${portfolioData.name}. All rights reserved.`;
+
+            const navContainer = document.querySelector('.nav-container');
+            navContainer.innerHTML = portfolioData.navLinks.map(link => `<a href="#${link.toLowerCase()}" class="nav-link ${link === 'Home' ? 'active' : ''}">${link}</a>`).join('');
+            
+            const aboutContainer = document.getElementById('about-text');
+            aboutContainer.innerHTML = portfolioData.about.text.map(p => `<p>${p}</p>`).join('');
+
+            const interestsContainer = document.getElementById('interests-grid');
+            interestsContainer.innerHTML = portfolioData.interests.map(interest => `
+                <div class="glass-container p-6 scroll-animate flex flex-col items-center text-center">
+                    <div class="text-cyan-400 mb-4">${interest.icon}</div>
+                    <h3 class="text-xl font-bold text-white mb-2">${interest.title}</h3>
+                    <p class="text-gray-400 text-sm">${interest.description}</p>
+                </div>
+            `).join('');
+
+            const experienceContainer = document.getElementById('experience-timeline');
+            experienceContainer.innerHTML = portfolioData.experience.map(job => `
+                <div class="timeline-item scroll-animate">
+                    <h3 class="text-xl font-bold text-cyan-400">${job.title}</h3>
+                    <p class="text-gray-400 mb-2">${job.company} • ${job.period}</p>
+                    <p class="text-gray-300">${job.description}</p>
+                </div>
+            `).join('');
+
+            const projectsContainer = document.getElementById('projects-grid');
+            projectsContainer.innerHTML = portfolioData.projects.map(project => `
+                <div class="project-card block group p-6 border border-gray-700 rounded-lg hover:bg-gray-800/50 scroll-animate glass-container" data-title="${project.title}" data-description="${project.description}">
+                    <div class="w-full h-48 bg-gradient-to-br ${project.gradient} rounded-lg mb-4 flex items-center justify-center">
+                        <span class="text-white text-6xl">${project.icon}</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-cyan-400">${project.title}</h3>
+                    <p class="mt-2 text-gray-400">${project.description}</p>
+                    <div class="mt-4 flex flex-wrap gap-2">
+                        ${project.tags.map(tag => `<span class="skill-badge text-xs">${tag}</span>`).join('')}
+                    </div>
+                    <div class="mt-4 flex items-center space-x-4">
+                        <a href="${project.repoLink}" target="_blank" class="text-sm text-cyan-400 hover:underline">GitHub Repo</a>
+                        ${project.liveLink ? `<a href="${project.liveLink}" target="_blank" class="text-sm text-cyan-400 hover:underline">Live Demo</a>` : ''}
+                    </div>
+                    <button class="elaborate-btn mt-4 text-sm text-white bg-cyan-600/50 px-3 py-1 rounded-md hover:bg-cyan-500/50 transition w-full">✨ Elaborate with AI</button>
+                </div>
+            `).join('');
+            
+            const openProblemsContainer = document.getElementById('open-problems-list');
+            openProblemsContainer.innerHTML = portfolioData.openProblems.map(problem => `<p class="scroll-animate">“${problem}”</p>`).join('');
+
+            const skillsContainer = document.getElementById('skills-container');
+            skillsContainer.innerHTML = portfolioData.skills.map(skillArea => `
+                <div class="scroll-animate-left">
+                    <h3 class="text-2xl font-bold text-cyan-400 mb-4">${skillArea.area}</h3>
+                    <div class="space-y-4">
+                        ${skillArea.list.map(skill => `
+                            <div>
+                                <div class="flex justify-between mb-2">
+                                    <span>${skill.name}</span>
+                                    <span>${skill.level}%</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" data-width="${skill.level}"></div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+
+            const contactDetails = document.getElementById('contact-details');
+            contactDetails.innerHTML = `
+                <div class="flex items-center space-x-3"><span class="text-cyan-400">📧</span><span>${portfolioData.contact.email}</span></div>
+                <div class="flex items-center space-x-3"><span class="text-cyan-400">📱</span><span>${portfolioData.contact.phone}</span></div>
+                <div class="flex items-center space-x-3"><span class="text-cyan-400">📍</span><span>${portfolioData.contact.location}</span></div>
+            `;
+
+            const socialLinks = document.getElementById('social-links');
+            socialLinks.innerHTML = `
+                <a href="${portfolioData.contact.linkedin}" target="_blank" class="text-gray-400 hover:text-cyan-400 transition-colors duration-300">LinkedIn</a>
+                <a href="${portfolioData.contact.github}" target="_blank" class="text-gray-400 hover:text-cyan-400 transition-colors duration-300">GitHub</a>
+            `;
+        }
+        renderContent();
+
+
+        // --- UI & ANIMATIONS ---
+        const matrixCanvas = document.getElementById('matrix-canvas');
+        const matrixCtx = matrixCanvas.getContext('2d');
+        function resizeMatrixCanvas() { matrixCanvas.width = window.innerWidth; matrixCanvas.height = window.innerHeight; }
+        resizeMatrixCanvas();
+        window.addEventListener('resize', resizeMatrixCanvas);
+        const matrixChars = 'アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズブプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴッン0123456789';
+        const fontSize = 14;
+        const columns = Math.floor(matrixCanvas.width / fontSize);
+        const drops = [];
+        for (let i = 0; i < columns; i++) { drops[i] = Math.random() * matrixCanvas.height; }
+        function drawMatrix() {
+            matrixCtx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            matrixCtx.fillRect(0, 0, matrixCanvas.width, matrixCanvas.height);
+            matrixCtx.fillStyle = '#0F0';
+            matrixCtx.font = `${fontSize}px monospace`;
+            for (let i = 0; i < drops.length; i++) {
+                const char = matrixChars[Math.floor(Math.random() * matrixChars.length)];
+                matrixCtx.fillText(char, i * fontSize, drops[i]);
+                if (drops[i] > matrixCanvas.height && Math.random() > 0.975) { drops[i] = 0; }
+                drops[i] += fontSize;
+            }
+        }
+        setInterval(drawMatrix, 50);
+
+        // --- NEW: Galactic Stars Animation ---
+        const starsCanvas = document.getElementById('stars-canvas');
+        const starsCtx = starsCanvas.getContext('2d');
+        let stars = [];
+        const numStars = 300;
+
+        function resizeStarsCanvas() {
+            starsCanvas.width = window.innerWidth;
+            starsCanvas.height = window.innerHeight;
+            stars = [];
+            for(let i = 0; i < numStars; i++) {
+                stars.push({
+                    x: Math.random() * starsCanvas.width,
+                    y: Math.random() * starsCanvas.height,
+                    radius: Math.random() * 1.5,
+                    vx: (Math.random() - 0.5) / 2,
+                    vy: (Math.random() - 0.5) / 2
+                });
+            }
+        }
+        resizeStarsCanvas();
+        window.addEventListener('resize', resizeStarsCanvas);
+
+        function drawStars() {
+            starsCtx.clearRect(0, 0, starsCanvas.width, starsCanvas.height);
+            starsCtx.fillStyle = 'white';
+            stars.forEach(star => {
+                starsCtx.beginPath();
+                starsCtx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+                starsCtx.fill();
+                
+                star.x += star.vx;
+                star.y += star.vy;
+                
+                if (star.x < 0 || star.x > starsCanvas.width) star.vx = -star.vx;
+                if (star.y < 0 || star.y > starsCanvas.height) star.vy = -star.vy;
+            });
+            requestAnimationFrame(drawStars);
+        }
+        drawStars();
+
+
+        const cursor = document.getElementById('aurora-cursor');
+        document.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+            if (e.target.closest('a, button, .project-card, input, textarea')) { cursor.classList.add('hover'); } 
+            else { cursor.classList.remove('hover'); }
+        });
+
+        // Spotlight effect for all glass containers
+        document.querySelectorAll('.glass-container').forEach(card => {
+            card.addEventListener('mousemove', e => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                card.style.setProperty('--mouse-x', `${x}px`);
+                card.style.setProperty('--mouse-y', `${y}px`);
+            });
+        });
+
+        const glitchText = document.getElementById('glitch-text');
+        const originalText = glitchText.textContent;
+        const chars = "!<>-_\\/[]{}—=+*^?#________";
+        let interval = null;
+        glitchText.addEventListener('mouseover', () => {
+            let iteration = 0;
+            clearInterval(interval);
+            interval = setInterval(() => {
+                glitchText.textContent = originalText.split("").map((letter, index) => {
+                    if (index < iteration) return originalText[index];
+                    return chars[Math.floor(Math.random() * chars.length)];
+                }).join("");
+                if (iteration >= originalText.length) clearInterval(interval);
+                iteration += 1 / 3;
+            }, 30);
+        });
+
+        const typingText = document.getElementById('typing-text');
+        const phrases = portfolioData.typingPhrases;
+        let phraseIndex = 0;
+        let charIndex = 0;
+        let isDeleting = false;
+        function typeWriter() {
+            const currentPhrase = phrases[phraseIndex];
+            if (isDeleting) {
+                typingText.textContent = currentPhrase.substring(0, charIndex - 1);
+                charIndex--;
+            } else {
+                typingText.textContent = currentPhrase.substring(0, charIndex + 1);
+                charIndex++;
+            }
+            let typeSpeed = isDeleting ? 50 : 100;
+            if (!isDeleting && charIndex === currentPhrase.length) { typeSpeed = 2000; isDeleting = true; } 
+            else if (isDeleting && charIndex === 0) { isDeleting = false; phraseIndex = (phraseIndex + 1) % phrases.length; typeSpeed = 500; }
+            setTimeout(typeWriter, typeSpeed);
+        }
+        setTimeout(typeWriter, 1000);
+
+        const scrollElements = document.querySelectorAll(".scroll-animate, .scroll-animate-left, .scroll-animate-right");
+        const elementInView = (el, dividend = 1) => {
+            const elementTop = el.getBoundingClientRect().top;
+            return (elementTop <= (window.innerHeight || document.documentElement.clientHeight) / dividend);
+        };
+        const displayScrollElement = (element) => element.classList.add("is-visible");
+        const handleScrollAnimation = () => { scrollElements.forEach((el) => { if (elementInView(el, 1.25)) { displayScrollElement(el); } }); };
+        window.addEventListener("scroll", handleScrollAnimation);
+        handleScrollAnimation();
+
+        const animateProgressBars = () => {
+            const progressBars = document.querySelectorAll('.progress-fill');
+            progressBars.forEach(bar => {
+                if (elementInView(bar.parentElement, 1.5)) {
+                    bar.style.width = bar.getAttribute('data-width') + '%';
+                }
+            });
+        };
+        window.addEventListener('scroll', animateProgressBars);
+        animateProgressBars();
+
+        function updateActiveNavLink() {
+            let current = '';
+            document.querySelectorAll('section, header').forEach(section => {
+                if (window.scrollY >= (section.offsetTop - 200)) { current = section.getAttribute('id'); }
+            });
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === `#${current}`) { link.classList.add('active'); }
+            });
+        }
+        window.addEventListener('scroll', updateActiveNavLink);
+        updateActiveNavLink();
+
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({ behavior: 'smooth' });
+            });
+        });
+
+        // --- GEMINI AI & CHAT ---
+        const aiChatFab = document.getElementById('ai-chat-fab');
+        const aiChatModal = document.getElementById('ai-chat-modal');
+        const chatInput = document.getElementById('chat-input');
+        const chatWindow = document.getElementById('chat-window');
+
+        aiChatFab.addEventListener('click', () => {
+            aiChatModal.classList.toggle('visible');
+        });
+
+        async function callGeminiAPI(prompt, context) {
+            const apiKey = ""; // Leave empty
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+            const fullPrompt = `${context}\n\nBased on the context provided, answer the following question concisely: ${prompt}`;
+            const payload = { contents: [{ role: "user", parts: [{ text: fullPrompt }] }] };
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+                const result = await response.json();
+                if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
+                    return result.candidates[0].content.parts[0].text;
+                } else {
+                    throw new Error("Invalid response structure from API.");
+                }
+            } catch (error) {
+                console.error("Gemini API call failed:", error);
+                return `Error: Could not get a response from the AI. Please check the console.`;
+            }
+        }
+
+        function addMessageToChat(message, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${sender}-message`;
+            if (sender === 'loading') {
+                messageDiv.innerHTML = `<div class="loading-dots"><span></span><span></span><span></span></div>`;
+            } else {
+                messageDiv.textContent = message;
+            }
+            chatWindow.appendChild(messageDiv);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+            return messageDiv;
+        }
+
+        chatInput.addEventListener('keypress', async (e) => {
+            if (e.key === 'Enter' && chatInput.value.trim() !== '') {
+                const userMessage = chatInput.value;
+                addMessageToChat(userMessage, 'user');
+                chatInput.value = '';
+                const loadingIndicator = addMessageToChat('', 'loading');
+                const context = `This is the portfolio of Prithwish Ghosh. His interests: ${JSON.stringify(portfolioData.interests)}. His Experience: ${JSON.stringify(portfolioData.experience)}. His Projects: ${JSON.stringify(portfolioData.projects)}. His Skills: ${JSON.stringify(portfolioData.skills)}.`;
+                const aiResponse = await callGeminiAPI(userMessage, context);
+                loadingIndicator.remove();
+                addMessageToChat(aiResponse, 'ai');
+            }
+        });
+
+        document.body.addEventListener('click', async function(e) {
+            if (e.target.classList.contains('elaborate-btn')) {
+                const projectCard = e.target.closest('.project-card');
+                const title = projectCard.dataset.title;
+                const description = projectCard.dataset.description;
+                
+                aiChatModal.classList.add('visible');
+                addMessageToChat(`Tell me more about the "${title}" project.`, 'user');
+                const loadingIndicator = addMessageToChat('', 'loading');
+                
+                const prompt = `You are a tech portfolio assistant. Given the project title '${title}' and a brief description '${description}', elaborate on it in 3-4 sentences. Focus on potential technical challenges, key features, and the technologies used. Make it sound impressive and professional.`;
+                
+                const aiResponse = await callGeminiAPI(prompt, "");
+                loadingIndicator.remove();
+                addMessageToChat(aiResponse, 'ai');
+            }
+        });
+    </script>
+</body>
+</html>
+�
